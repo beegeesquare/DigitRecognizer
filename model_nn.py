@@ -46,14 +46,20 @@ class NeuralNetwork:
         # print epsilon
         self.weights=[] # Choose weights based on uniform distribution between [-epsilon, epsilon]
         
-        
+        # Add bias units to the weights except the last layer
         for lyr in range(0,nbr_of_layers-1):
             # Take the number of rows from the previous layer
             # TODO: need to check this initialization from Coursera
             # self.weights.append(np.random.random((layer_size[lyr]+1,layer_size[lyr+1]))*2*epsilon-epsilon) # .random((x,y)) gives uniformly distributed RVs between 0, 1 of size (x,y)
             self.weights.append((2*np.random.random((layer_size[lyr]+1,layer_size[lyr+1]))-1)*0.25) # Initialize the weights randomly between -0.25 and 0.25
-            
-        # print self.weights
+        '''
+        # Do not add the bias unit for the last layer
+        self.weights.append((2*np.random.random((layer_size[lyr+1],layer_size[lyr+2]))-1)*0.25)
+        
+        print (self.weights)
+        weights_shape=[i.shape for i in self.weights]
+        print (weights_shape)
+        '''
         # self.activation=activation;  # Chooses the activation function
         
         if activation=='sigmoid':
@@ -233,7 +239,7 @@ def digit_data_set_sklearn():
         y_test_bool=(y_test==c).astype(int) # Create an 1d array
         y_test_labeled_matrix[:,c]=y_test_bool;
     
-    nbr_epochs=30000
+    nbr_epochs=10000
     nn.fit(X_train,y_train_labeled_matrix,epochs=nbr_epochs)
     
     y_train_pred_prob=nn.predict(X_train); # Shape of y_pred_prob is same that of y_labeled_matrix. This is probability of the data to be identified as a digit
@@ -275,13 +281,19 @@ def digit_data_set_sklearn():
 if __name__=="__main__":
     # print test()
     # digit_data_set_sklearn()
+    """
+    This is the data set from the Kaggle competition  on Digit recognizer
+    This code uses the custom build neural network instead of sklearn neural network
+    So, use it with caution. Data-structures are quite different from that of sklearn MLPClassifier
+    Starting the Neural network model for digit recognizer...'
+    """
     
-    # TODO: Start the code for Digit recognizer
-    print ('Starting the Neural network model for digit recognizer...')
+    # TODO: Start the code for Digit recognizer (this does not perform as good as sklearn library...needs more work !)
+    
     from digit_recognizer import get_data
     import os
     import pandas as pd
-    from sklearn.cross_validation import train_test_split # Cross-validation has been moved to model_selection in 0.20 version
+    from sklearn.model_selection import train_test_split # Cross-validation has been moved to model_selection in 0.20 version
     from sklearn.metrics import confusion_matrix, classification_report
     
     train_df=get_data(); # The data-structure here is pandas dataframe
@@ -293,12 +305,12 @@ if __name__=="__main__":
   
     X=train_df[:,1:]
     # Normalize the train data (We can also use MinMaxScaler in sklearn)
-    X = X-np.min(X)
     X = X*1.0/np.max(X) # make values "float"
+   
+   
     
     X_test=test_df.as_matrix()
     # Normalize the test data (We can also use MinMaxScaler in sklearn)
-    X_test = X_test-np.min(X_test)
     X_test = X_test*1.0/np.max(X_test)
     
     num_labels=10; # 0,1,2,...,9
@@ -306,14 +318,17 @@ if __name__=="__main__":
     # First element in the layer size does not matter if it is X or X_train or X_
     layer_size=[X.shape[1],nbr_hidden_layer_size,num_labels]; # Since there are 10 labels, last layer has 10 outputs, so y should be a matrix of (X.shape[0],num_labels)
     
+    print (layer_size)
     # create a neural network
     nn=NeuralNetwork(layer_size = layer_size,activation='tanh')
     
     # Concatenate ones to the input matrix (this is for the bias unit)
     X=np.concatenate((np.ones((X.shape[0],1)),X),axis=1)
-        
+    
+    # print (X[0,:])
+    
     # Split the data into train and cross-validation set
-    X_train, X_cv, y_train, y_cv = train_test_split(X, y,train_size=0.05,random_state=13) # Taking only 5% or 10% of all the data (since actual data is very big)
+    X_train, X_cv, y_train, y_cv = train_test_split(X, y,train_size=0.7,random_state=13) # Taking only 5% or 10% of all the data (since actual data is very big)
     
     
     # We can also used labelBinarizer of sklearn instead of below logical array
@@ -338,9 +353,13 @@ if __name__=="__main__":
     # Fit NN with given X and Y
     # First add the bias term to X
     
-    nbr_epochs=20000;
-    nn.fit(X_train,y_train_labeled_matrix,epochs=nbr_epochs)
-    print (nn.weights)
+    nbr_epochs=150;
+    nn.fit(X_train,y_train_labeled_matrix,lmbda=0.1, epochs=nbr_epochs)
+    # print (nn.weights)
+    
+    weights_size=[i.shape for i in nn.weights]
+    
+    # print (weights_size)
     
     y_train_pred_prob=nn.predict(X_train); # Shape of y_pred_prob is same that of y_labeled_matrix. This is probability of the data to be identified as a digit
     
