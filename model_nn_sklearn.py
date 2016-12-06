@@ -69,21 +69,23 @@ if __name__=='__main__':
     mlp.fit(X_train, y_train)
     print("Training set score: %f" % mlp.score(X_train, y_train))
     print("Cross-validation set score: %f" % mlp.score(X_cv, y_cv))
-    print(mlp.coefs_)
+    #print(mlp.coefs_)
     weights_shape=[i.shape for i in mlp.coefs_]
-    print (weights_shape)
-    fig, axes = plt.subplots(4, 4)
+    #print (weights_shape)
+    fig, axes = plt.subplots(5, 5)
     # use global min / max to ensure all weights are shown on the same scale
     vmin, vmax = mlp.coefs_[0].min(), mlp.coefs_[0].max()
+    
     for coef, ax in zip(mlp.coefs_[0].T, axes.ravel()):
+        i+=1
         ax.matshow(coef.reshape(28, 28), cmap=plt.cm.gray, vmin=.5 * vmin,
                    vmax=.5 * vmax)
         ax.set_xticks(())
     
         ax.set_yticks(())
-
+    
     plt.show()
-    fig.savefig(os.path.join('plots','nn_weights_%s_%s.eps'%(solver,activation)))
+    fig.savefig(os.path.join('plots','nn_weights_%s_%s.png'%(solver,activation)))
     outdir='results'
     try:
         os.makedirs(outdir)
