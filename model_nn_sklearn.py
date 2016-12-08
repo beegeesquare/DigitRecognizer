@@ -33,6 +33,9 @@ def test():
 if __name__=='__main__':
     
     from sklearn.model_selection import train_test_split
+    from sklearn.metrics import confusion_matrix, classification_report
+    from sklearn.grid_search import GridSearchCV
+    
     import pandas as pd
     import os
     
@@ -69,6 +72,9 @@ if __name__=='__main__':
     mlp.fit(X_train, y_train)
     print("Training set score: %f" % mlp.score(X_train, y_train))
     print("Cross-validation set score: %f" % mlp.score(X_cv, y_cv))
+    
+    cv_pred_digits=mlp.predict(X_cv)
+    
     #print(mlp.coefs_)
     weights_shape=[i.shape for i in mlp.coefs_]
     #print (weights_shape)
@@ -77,7 +83,6 @@ if __name__=='__main__':
     vmin, vmax = mlp.coefs_[0].min(), mlp.coefs_[0].max()
     
     for coef, ax in zip(mlp.coefs_[0].T, axes.ravel()):
-        i+=1
         ax.matshow(coef.reshape(28, 28), cmap=plt.cm.gray, vmin=.5 * vmin,
                    vmax=.5 * vmax)
         ax.set_xticks(())
@@ -97,3 +102,38 @@ if __name__=='__main__':
     df_test_pred.index.names=['ImageId']
     
     df_test_pred.to_csv('%s/nn_kaggle_test_results_sklearn_%s_%s_%d.csv'%(outdir,solver,activation,nbr_hidden_layers))
+    
+    # Print confusion matrix
+    print (confusion_matrix(y_cv,cv_pred_digits))
+    print (classification_report(y_cv,cv_pred_digits))
+    
+    
+    # Use grid search CV
+    '''
+    parameters={'solver':('sgd','lbfgs','adam'),'activation':('logistic', 'tanh', 'relu'),'hidden_layer_sizes':(50,75,100)}
+    
+    nn_clf=MLPClassifier()
+    
+    grid_obj=GridSearchCV(nn_clf,parameters)
+    
+    grid_obj.fit(X_train, y_train)
+    
+    best_nn_model= grid_obj.best_estimator_
+    
+    print (best_nn_model)
+    '''
+    best_nn_model=MLPClassifier(activation='logistic',hidden_layer_sizes=100,solver='adam')
+    
+    best_nn_model.fit(X_train, y_train)
+    cv_pred_digits=best_nn_model.predict(X_cv)
+    
+    print (cv_pred_digits)
+    
+    df_test_pred=pd.DataFrame(test_pred_digits,index=range(1,test_pred_digits.shape[0]+1),columns=['Label'])
+    df_test_pred.index.names=['ImageId']
+    
+    df_test_pred.to_csv('%s/nn_kaggle_test_results_sklearn_grid_search.csv'%(outdir))
+    
+    # Print confusion matrix
+    print (confusion_matrix(y_cv,cv_pred_digits))
+    print (classification_report(y_cv,cv_pred_digits))
