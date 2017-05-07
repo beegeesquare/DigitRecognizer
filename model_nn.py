@@ -94,6 +94,7 @@ class NeuralNetwork:
             
             # Third add the bias-units for the last_input along all rows (i.e., bias unit of column matrix)
             if i!=len(self.weights)-1: # Do not add the bias-unit for the last layer in the network, which is y^
+                #print (i,all_activation_units)
                 self.last_input=np.concatenate((np.ones((self.last_input.shape[0],1)),self.last_input),axis=1)
             # Append the activation units of each layer
             all_activation_units.append(self.last_input)
@@ -145,7 +146,7 @@ class NeuralNetwork:
             #delta_w=np.reshape(delta_w,(rw,cw)) # As we know big-delta size should be same as weights, using reshape make sure the matrices are of same size
             self.weights[i] += eta * delta_w
      
-    def fit(self,X,y,lmbda=0.1,epochs=10000): # lmbda is the training rate (sometimes referred as eta)
+    def fit(self,X,y,lmbda=0.2,epochs=10000): # lmbda is the training rate (sometimes referred as eta)
         """
         Takes X and y as the input arguments. lmbda and epochs are optional (learning rates and number of iterations)
         Using stochastic gradient descent computes the updates to the weights and does the back-propagation.
@@ -153,10 +154,20 @@ class NeuralNetwork:
         """
         
         for k in range(epochs):
+            # take a random sample of the complete data set
+            random_index=np.random.randint(X.shape[0]);
+            data_point=X[random_index,:]
+            y_data_point=y[random_index]
+            # Reshape this to (1,data_point.shape[0])
+            data_point=np.reshape(data_point,(1,len(data_point))) # 
             # For each epoch using feed-forward propagation compute the activation units for the given weights
-            a=self.activate(X); # a is the list of arrays
+            # a=self.activate(X); # a is the list of arrays
+            a=self.activate(data_point); # a is the list of arrays
             # Update the weights based on the activation units
-            self.update(a,y,lmbda)
+            
+            # self.update(a,y,lmbda)
+            y_data_point=np.reshape(y_data_point,(1,len(y_data_point)))
+            self.update(a,y_data_point,lmbda)
             print('\rFinished iteration {0}'.format(k)), # , prints the same line
      
     def predict(self, X):
@@ -178,13 +189,13 @@ def test():
     y = np.array([[0], [1], [1], [0]]) # y should be a column array
     
     # Assume layer size does not include the bias unit
-    layer_size=[X.shape[1],2,2,1]; # This is number of activation units in each  layer in the neural network should have; length of this is nothing but the number of layers
+    layer_size=[X.shape[1],2,1]; # This is number of activation units in each  layer in the neural network should have; length of this is nothing but the number of layers
     
     # Concatenate ones to the input matrix (this is for the bias unit)
     X=np.concatenate((np.ones((X.shape[0],1)),X),axis=1)
     
-    u1 = NeuralNetwork(layer_size=layer_size)
-    u1.fit(X,y,epochs=10000)
+    u1 = NeuralNetwork(layer_size=layer_size,activation='sigmoid')
+    u1.fit(X,y,epochs=1000000)
     y_pred=u1.predict(X)
     
     return y_pred    
@@ -239,7 +250,7 @@ def digit_data_set_sklearn():
         y_test_bool=(y_test==c).astype(int) # Create an 1d array
         y_test_labeled_matrix[:,c]=y_test_bool;
     
-    nbr_epochs=10000
+    nbr_epochs=30000
     nn.fit(X_train,y_train_labeled_matrix,epochs=nbr_epochs)
     
     y_train_pred_prob=nn.predict(X_train); # Shape of y_pred_prob is same that of y_labeled_matrix. This is probability of the data to be identified as a digit
@@ -279,7 +290,7 @@ def digit_data_set_sklearn():
 
  
 if __name__=="__main__":
-    # print test()
+    print (test())
     # digit_data_set_sklearn()
     """
     This is the data set from the Kaggle competition  on Digit recognizer
@@ -289,7 +300,7 @@ if __name__=="__main__":
     """
     
     # TODO: Start the code for Digit recognizer (this does not perform as good as sklearn library...needs more work !)
-    
+    '''
     from digit_recognizer import get_data
     import os
     import pandas as pd
@@ -305,12 +316,15 @@ if __name__=="__main__":
   
     X=train_df[:,1:]
     # Normalize the train data (We can also use MinMaxScaler in sklearn)
-    X = X*1.0/np.max(X) # make values "float"
-   
+    # X = (X*1.0-128)/128 # make values "float"
+    X -= np.min(X) # normalize the values to bring them into the range 0-1
+    X = X*1.0/np.max(X)
    
     
     X_test=test_df.as_matrix()
     # Normalize the test data (We can also use MinMaxScaler in sklearn)
+    # X_test = (X_test*1.0-128)/128
+    X_test -= np.min(X_test) # normalize the values to bring them into the range 0-1
     X_test = X_test*1.0/np.max(X_test)
     
     num_labels=10; # 0,1,2,...,9
@@ -353,7 +367,7 @@ if __name__=="__main__":
     # Fit NN with given X and Y
     # First add the bias term to X
     
-    nbr_epochs=150;
+    nbr_epochs=100000;
     nn.fit(X_train,y_train_labeled_matrix,lmbda=0.1, epochs=nbr_epochs)
     # print (nn.weights)
     
@@ -363,7 +377,7 @@ if __name__=="__main__":
     
     y_train_pred_prob=nn.predict(X_train); # Shape of y_pred_prob is same that of y_labeled_matrix. This is probability of the data to be identified as a digit
     
-    # print (y_train_pred_prob)
+    print (y_train_pred_prob)
     
     np.savetxt('./%s/nn_prob_.csv'%(outdir),y_train_pred_prob,delimiter=',')
     
@@ -394,5 +408,5 @@ if __name__=="__main__":
     df_test_pred.index.names=['ImageId']
     
     df_test_pred.to_csv('%s/nn_test_results_%d_%d.csv'%(outdir,nbr_epochs,nbr_hidden_layer_size))
-    
+    '''
     
